@@ -23,6 +23,7 @@ export function useScene() {
       generation = 0,
       revision = 0,
       lastRole: string | undefined;
+    let latestItems: Hotspot[] | undefined;
     const stops: (() => void)[] = [];
     const fail = (e: unknown) => {
       if (live)
@@ -35,18 +36,22 @@ export function useScene() {
       const g = ++generation,
         r = revision;
       const ready = await OBR.scene.isReady();
+      if (!live || g !== generation) return;
       const gm = (await OBR.player.getRole()) === "GM";
+      if (!live || g !== generation) return;
       lastRole = gm ? "GM" : "PLAYER";
       const scene = ready ? await sceneId() : "";
+      if (!live || g !== generation) return;
       const items = ready ? hotspots(await OBR.scene.items.getItems()) : [];
       if (live && g === generation) {
-        if (r !== revision) return read();
         set({
           connected: true,
           ready,
           gm,
           scene: scene || "",
-          items,
+          // Item subscriptions already contain a full snapshot. Reuse it
+          // instead of recursively fetching during continuous scene updates.
+          items: ready ? (r !== revision ? latestItems ?? items : items) : [],
           error: "",
         });
       }
@@ -56,13 +61,15 @@ export function useScene() {
       stops.push(
         OBR.scene.onReadyChange(() => {
           revision++;
+          latestItems = undefined;
           set((s) => ({ ...s, ready: false, scene: "", items: [] }));
           void read().catch(fail);
         }),
         OBR.scene.items.onChange((items: Item[]) => {
           revision++;
+          latestItems = hotspots(items);
           if (live)
-            set((s) => (s.ready ? { ...s, items: hotspots(items) } : s));
+            set((s) => (s.ready ? { ...s, items: latestItems! } : s));
         }),
         OBR.scene.onMetadataChange((m) => {
           if (live)
@@ -75,7 +82,10 @@ export function useScene() {
             }));
         }),
         OBR.player.onChange((player) => {
-          if (player.role !== lastRole) void read().catch(fail);
+          if (player.role !== lastRole) {
+            lastRole = player.role;
+            void read().catch(fail);
+          }
         }),
         OBR.theme.onChange((t) => {
           document.documentElement.dataset.theme = t.mode.toLowerCase();
