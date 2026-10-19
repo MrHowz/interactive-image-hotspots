@@ -555,3 +555,18 @@ input[type="checkbox"] {
   font-weight: 400;
   margin-top: 4px;
 }
+.selection-status {
+  padding: 14px;
+  margin-top: 14px;
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  background: var(--surface);
+}
+.selection-status strong {
+  color: var(--accent);
+  font-size: 13px;
+}
+.selection-status p {
+  font-size: 11px;
+  margin: 5px 0 10px;
+}

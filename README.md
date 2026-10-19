@@ -1,4 +1,4 @@
-# Interactive Image Hotspots 1.1.0
+# Interactive Image Hotspots 1.1.1
 
 React + TypeScript + Vite extension using Owlbear Rodeo SDK **3.1.0**. Link one image to any connected group of square grid cells. Markings can be hidden while the cells remain clickable. Existing circle hotspots continue to work.
 
@@ -20,7 +20,7 @@ For an HTTPS development server use `npm run dev:https` and trust the developmen
 
 1. เปิด Scene ที่ใช้กริด **Square** แล้วเปิดแผง Image Hotspots ด้วยบัญชี GM
 2. กด **Select cells** แล้วคลิกช่องบนแผนที่ที่ต้องการ เช่น 3 ช่องติดกัน หรือรูปตัว L คลิกช่องเดิมอีกครั้งเพื่อนำออก
-3. กดเครื่องหมาย **✓ Done · choose image** บนแถบเครื่องมือของแผนที่
+3. แผงจะแสดงจำนวนช่องที่เลือก กด **Done · choose image ในแผง** หรือใช้เครื่องหมาย ✓ บนแถบเครื่องมือแผนที่
 4. ตั้งชื่อ เลือกภาพจาก HTTPS URL, Owlbear Assets หรืออัปโหลดไฟล์ใหม่ แล้วกด Save
 5. ใช้ **Explore** แล้วคลิกช่องใดก็ได้ในชุดนั้นเพื่อเปิดภาพเดียวกัน เฉพาะคนที่คลิกจะเห็น Viewer
 6. ใช้ **Hide marks / Show marks** ในแต่ละรายการ หรือ **Hide all markings / Show all markings** เพื่อซ่อน/แสดงสีและกรอบ โดยยังคลิกช่องได้
@@ -46,6 +46,9 @@ For an HTTPS development server use `npm run dev:https` and trust the developmen
 src/model.ts        Versioned circle/cell metadata, validation, connectivity, hit geometry
 src/sdk.ts          GM/scene guards, item CRUD, marker toggles and modal routing
 src/background.ts   Explore/select modes, Done/Cancel actions and local selection preview
+src/control.ts      LOCAL-only command transport between panel and background
+src/controlProtocol.ts Request/reply matching, errors, timeout and listener cleanup
+src/useSelection.ts Live selected-cell count and panel Done/Cancel controls
 src/useScene.ts     Scene, role and theme subscriptions without recursive reload polling
 src/CellPicker.tsx  Keyboard-accessible editing of connected cells
 src/Editor.tsx      Name, image, region, coordinates and access settings
@@ -61,7 +64,7 @@ Marker visibility (`marks`) is separate from interaction (`enabled`) and player 
 
 Scene coordinates, rotation and scale are respected by hit testing. Holes and unselected cells inside a region's bounding box do not respond. Overlap resolves by descending z-index, then ID. Each click tests the selected cells only; no canvas screenshot or global click interception is used. **Explore must be active for map clicks.**
 
-Selection uses tool metadata and one **local-only Path preview**. Each click updates that local preview; there is no shared scene item write until Save. Escape/Cancel drops the draft; leaving the mode clears its preview. Selecting again can resume a same-scene draft. Metadata, geometry and name save together in one item update. The all-markings toggle uses one batched update.
+Selection lives in background-owned memory and one **local-only Path preview**. Panel commands use SDK broadcast with `destination: 'LOCAL'`, matching request IDs and explicit acknowledgments; the background checks the sender's connection ID and GM/scene before starting. It also owns tool activation. No Tool Metadata exchange between frames is required. The first map click can initialize a draft even if an activation callback was not delivered. Clicks and commands are queued in order. Each click updates the local preview and panel count; there is no shared scene item write until Save. Escape/Cancel drops the draft; leaving the mode clears its preview. Metadata, geometry and name save together in one item update. The all-markings toggle uses one batched update.
 
 A legacy circle is converted by adding the new Path first, then deleting the circle, because SDK updates retain the item type. If the scene changes or deletion fails between those operations, both may remain: the image is preserved, and the old circle can be deleted manually. Normal region edits preserve their item ID.
 
@@ -79,7 +82,7 @@ Disable player **MAP_CREATE, MAP_UPDATE and MAP_DELETE** permissions in the room
 4. Deploy. Install into Owlbear using `https://YOUR-PROJECT.pages.dev/manifest.json` and enable the extension in the room.
 5. For an existing installation, commit updated files to GitHub and wait for Cloudflare to deploy, then refresh the Owlbear room once. If cached manifest data remains, re-add the custom extension using the same manifest URL.
 
-Version 1.1.0 includes the leading-slash manifest correction and the non-recursive scene loading fix. This local package has not automatically updated your GitHub repository or deployed website.
+Version 1.1.1 replaces the 1.1.0 Tool Metadata handoff that could leave the background without a draft and produce “Select cells from the Hotspots panel to start.” The previous harness had shared one metadata object across frames, masking that dependency; the updated harness deliberately returns no Tool Metadata and can suppress activation callbacks. The precise live-host failure mechanism still requires confirmation after deployment, but this release removes both dependencies. The manifest slash correction and non-recursive scene loading fix are retained. This local package has not automatically updated your GitHub repository or deployed website.
 
 ## GitHub Pages alternative
 

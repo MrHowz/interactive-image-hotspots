@@ -1,7 +1,6 @@
 import { useState } from "react";
-import { TOOL, VIEW, allowed, data, marksShown } from "./model";
+import { allowed, data, marksShown } from "./model";
 import {
-  OBR,
   beginSelection,
   setMarks,
   openEditor,
@@ -9,8 +8,11 @@ import {
   remove,
 } from "./sdk";
 import { useScene } from "./useScene";
+import { control } from "./control";
+import { useSelection } from "./useSelection";
 export function App() {
   const state = useScene();
+  const selection = useSelection();
   const [error, setError] = useState("");
   const [pending, setPending] = useState("");
   const [busy, setBusy] = useState(false);
@@ -61,7 +63,7 @@ export function App() {
                 void run(() =>
                   state.gm
                     ? beginSelection(state.scene)
-                    : OBR.tool.activateMode(TOOL, VIEW),
+                    : control("explore").then(() => {}),
                 )
               }
             >
@@ -71,16 +73,41 @@ export function App() {
               <button
                 disabled={busy}
                 onClick={() =>
-                  void run(() => OBR.tool.activateMode(TOOL, VIEW))
+                  void run(() => control("explore").then(() => {}))
                 }
               >
                 Explore
               </button>
             )}
           </div>
+          {state.gm && selection.active && selection.scene === state.scene && (
+            <div className="selection-status" role="status">
+              <strong>{selection.count} cells selected</strong>
+              <p>Click squares on the map, then finish here.</p>
+              <div className="row">
+                <button
+                  className="primary"
+                  disabled={busy || selection.count === 0}
+                  onClick={() =>
+                    void run(() => control("finish").then(() => {}))
+                  }
+                >
+                  Done · choose image
+                </button>
+                <button
+                  disabled={busy}
+                  onClick={() =>
+                    void run(() => control("cancel").then(() => {}))
+                  }
+                >
+                  Cancel selection
+                </button>
+              </div>
+            </div>
+          )}
           <p className="hint">
             {state.gm
-              ? "Select cells → click connected grid squares → ✓ Done in the map toolbar → choose an image."
+              ? "Select cells → click connected grid squares → Done in this panel → choose an image."
               : "Select Explore, then click a linked cell. Cells still work when their markings are hidden."}
           </p>
           {state.gm && state.items.length > 0 && (
@@ -258,7 +285,7 @@ export function App() {
         </>
       )}
       <footer className="panel-footer">
-        SCENE LINKS · PERSONAL IMAGE VIEWER
+        SCENE LINKS · PERSONAL IMAGE VIEWER · v1.1.1
       </footer>
     </main>
   );

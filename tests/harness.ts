@@ -11,8 +11,8 @@ import {
   data as hotspotData,
   hit,
   hotspots,
-  selectionData,
 } from "../src/model";
+import { CONTROL, type ControlState } from "../src/controlProtocol";
 const panel = document.querySelector<HTMLIFrameElement>("#panel")!;
 const modal = document.querySelector<HTMLIFrameElement>("#modal")!;
 const background = document.createElement("iframe");
@@ -24,6 +24,23 @@ let toolMetadata: Record<string, unknown> = {},
   activeMode = VIEW,
   localItems: Item[] = [],
   sharedWrites = 0;
+let selectedState: ControlState = { active: false, count: 0 };
+let activationCallbacks = false;
+const activationToggle = document.createElement("button");
+activationToggle.textContent = "Activation callbacks: OFF";
+activationToggle.addEventListener("click", () => {
+  activationCallbacks = !activationCallbacks;
+  activationToggle.textContent = `Activation callbacks: ${activationCallbacks ? "ON" : "OFF"}`;
+});
+document.querySelector("nav")!.append(activationToggle);
+const directSelect = document.createElement("button");
+directSelect.textContent = "Select mode directly";
+directSelect.addEventListener("click", () => {
+  activeMode = PLACE;
+  event("OBR_TOOL_MODE_ACTIVE_EVENT_CHANGE", { id: PLACE });
+  status();
+});
+document.querySelector("nav")!.append(directSelect);
 const context = () => ({
   activeTool: TOOL,
   activeMode,
@@ -136,9 +153,8 @@ function event(id: string, data: unknown) {
 function status() {
   document.querySelector("#status")!.textContent =
     `${role} · ${scene} · ${current().items.length} items`;
-  const s = selectionData(toolMetadata.selection);
   document.querySelector("#map-status")!.textContent =
-    `${activeMode === PLACE ? "Selecting" : "Explore"} · ${s?.cells.length ?? 0} selected · ${localItems.length} local previews · ${sharedWrites} shared writes`;
+    `${activeMode === PLACE ? "Selecting" : "Explore"} · ${selectedState.count} selected · ${localItems.length} local previews · ${sharedWrites} shared writes · Tool Metadata unavailable`;
   for (const button of document.querySelectorAll<HTMLButtonElement>(
     "#map-cells button",
   )) {
@@ -146,11 +162,17 @@ function status() {
       y = Number(button.dataset.y) * 100 + 50;
     const selected =
       activeMode === PLACE &&
-      s?.x !== undefined &&
-      s.cells.some(
-        (c) =>
-          Math.floor((x - s.x!) / s.cellSize) === c[0] &&
-          Math.floor((y - s.y!) / s.cellSize) === c[1],
+      localItems.some(
+        (i) =>
+          i.type === "PATH" &&
+          (i as import("@owlbear-rodeo/sdk").Path).commands.some(
+            (cmd) =>
+              cmd[0] === 0 &&
+              x >= i.position.x + cmd[1] &&
+              x < i.position.x + cmd[1] + 100 &&
+              y >= i.position.y + cmd[2] &&
+              y < i.position.y + cmd[2] + 100,
+          ),
       );
     const item = hit(hotspots(current().items), { x, y }, true),
       d = item ? hotspotData(item) : undefined;
@@ -173,11 +195,26 @@ window.addEventListener("message", (e) => {
   if (!nonce) return;
   let response: unknown = {};
   switch (id) {
+    case "OBR_PLAYER_GET_CONNECTION_ID":
+      response = { connectionId: "test-connection" };
+      break;
+    case "OBR_BROADCAST_SEND_MESSAGE": {
+      if (data.options?.destination !== "LOCAL")
+        throw new Error("The test requires LOCAL-only control messages.");
+      if (data.channel === CONTROL && data.data.kind === "state")
+        selectedState = data.data.state;
+      event(`OBR_BROADCAST_MESSAGE_${data.channel}`, {
+        data: data.data,
+        connectionId: "test-connection",
+      });
+      break;
+    }
     case "OBR_TOOL_SET_METADATA":
       toolMetadata = { ...toolMetadata, ...data.update };
       break;
     case "OBR_TOOL_GET_METADATA":
-      response = { metadata: toolMetadata };
+      // Regression: metadata is deliberately unavailable across frames.
+      response = { metadata: undefined };
       break;
     case "OBR_TOOL_MODE_ACTIVATE":
       event("OBR_TOOL_MODE_EVENT_DEACTIVATE", {
@@ -185,10 +222,11 @@ window.addEventListener("message", (e) => {
         context: context(),
       });
       activeMode = data.modeId;
-      event("OBR_TOOL_MODE_EVENT_ACTIVATE", {
-        id: activeMode,
-        context: context(),
-      });
+      if (activationCallbacks)
+        event("OBR_TOOL_MODE_EVENT_ACTIVATE", {
+          id: activeMode,
+          context: context(),
+        });
       event("OBR_TOOL_MODE_ACTIVE_EVENT_CHANGE", { id: activeMode });
       break;
     case "OBR_TOOL_MODE_GET_ACTIVE":

@@ -1,14 +1,27 @@
-# Validation record — 1.1.0
+# Validation record — 1.1.1
 
 Executed 20 October 2026 using Node.js 24.18.0, Owlbear SDK 3.1.0 and the local Vite server. This record distinguishes automated checks, browser checks against a simulated SDK host, and checks still needed in a real Owlbear room.
 
 ## Automated
 
-- `npm test`: 19 tests pass.
+- `npm test`: 25 tests pass, including six request/reply tests covering acknowledgments, concurrent out-of-order replies, validation failure, transport failure, timeout and listener cleanup.
 - `npm run lint`: Oxlint passes.
 - `npm run build`: strict TypeScript and Vite production build pass.
 - Tests cover adjacent cell clicks; three cells opening the same image; hidden markings retaining player clicks; Disabled/Players gates; L-shape gaps; negative cell coordinates; rotated/scaled geometry; connectedness; duplicate/empty/oversized regions; persisted version-2 metadata; selection parsing; URL/file validation; old circle geometry/visibility; and manifest slash boundaries.
 - Production entries include the action/editor/viewer page and background page. The simulated host and tests are not included in dist.
+
+## Browser checks actually executed for 1.1.1
+
+The simulated host deliberately returns undefined from Tool Metadata reads. Activation callbacks default to OFF. Production selection uses background memory and SDK LOCAL messages with acknowledgments; the host rejects non-LOCAL control sends.
+
+- Start from the panel: it receives an acknowledgment, shows 0 selected and exposes Done/Cancel buttons.
+- Click three adjacent map cells with callbacks OFF: the panel shows 3 selected, one local preview and zero shared item writes.
+- Finish using the panel button: the editor receives all three cells, the preview is removed and the selection controls disappear.
+- Save a real HTTPS image with markings off: one shared item is written. Switch to PLAYER and click an unmarked cell: the correct image viewer opens and loads.
+- Select mode directly without using the panel start command and with activation callbacks OFF: the first map click initializes a draft and the panel shows 1 selected.
+- Cancel from the panel: no preview, draft or shared write remains. Enable normal activation callbacks, repeat start/click/cancel, and confirm the same result.
+
+This is a regression simulation and not a claim that the exact live-host issue was reproduced. The 1.1.0 harness shared one Tool Metadata object across all frames and did not expose the dependency reported in the live room.
 
 ## Browser checks actually executed for 1.1.0
 

@@ -7,8 +7,6 @@ import OBR, {
 import {
   NS,
   SCENE_KEY,
-  TOOL,
-  PLACE,
   data,
   validate,
   regionCommands,
@@ -16,6 +14,7 @@ import {
   type Selection,
   type Hotspot,
 } from "./model";
+import { control } from "./control";
 export { OBR };
 export const page = (query: Record<string, string>) =>
   new URL(`index.html?${new URLSearchParams(query)}`, location.href).href;
@@ -166,7 +165,12 @@ export async function beginSelection(scene: string, id?: string) {
     throw new Error("Cell selection currently requires a square scene grid.");
   if (!Number.isFinite(cellSize) || cellSize < 12 || cellSize > 2000)
     throw new Error("Use a scene grid size between 12 and 2000 pixels.");
-  let selection: Selection = { scene, id, cellSize, cells: [] };
+  let selection: Selection = {
+    scene,
+    ...(id ? { id } : {}),
+    cellSize,
+    cells: [],
+  };
   if (id) {
     const [item] = await OBR.scene.items.getItems(
       (i) => i.id === id && !!data(i),
@@ -188,11 +192,10 @@ export async function beginSelection(scene: string, id?: string) {
         x: item.position.x,
         y: item.position.y,
         cells: d.cells,
-        marks: d.marks,
+        marks: d.marks !== false,
       };
     }
   }
   await guard(scene);
-  await OBR.tool.setMetadata(TOOL, { selection });
-  await OBR.tool.activateMode(TOOL, PLACE);
+  await control("start", selection);
 }
