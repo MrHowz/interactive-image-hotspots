@@ -1,14 +1,14 @@
 {
   "name": "Interactive Image Hotspots",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "manifest_version": 1,
   "description": "Place image portals on your scene. Click to explore handouts, portraits and clues.",
-  "icon": "icon.svg",
-  "background_url": "background.html",
+  "icon": "/icon.svg",
+  "background_url": "/background.html",
   "action": {
     "title": "Image Hotspots",
-    "icon": "icon.svg",
-    "popover": "index.html",
+    "icon": "/icon.svg",
+    "popover": "/index.html",
     "width": 420,
     "height": 620
   }
