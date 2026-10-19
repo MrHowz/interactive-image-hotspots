@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Hotspot SDK test harness</title>
+    <style>
+      body {
+        margin: 0;
+        background: #28353c;
+        color: white;
+        font: 14px system-ui;
+      }
+      nav {
+        padding: 12px;
+        display: flex;
+        gap: 12px;
+        align-items: center;
+      }
+      button {
+        padding: 8px;
+      }
+      #panel {
+        width: 420px;
+        height: 620px;
+        border: 1px solid #53656b;
+        margin: 15px;
+      }
+      #modal {
+        position: fixed;
+        inset: 70px 10%;
+        width: 80%;
+        height: calc(100vh - 90px);
+        background: #11191d;
+        border: 2px solid #a6d7bf;
+        border-radius: 12px;
+      }
+      #modal[hidden] {
+        display: none;
+      }
+      #background {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <nav>
+      <b>TEST ONLY · Simulated SDK host</b
+      ><button id="create">New at (320, 240)</button
+      ><button id="role">Switch role</button
+      ><button id="scene">Switch scene</button
+      ><button id="theme">Toggle theme</button><output id="status"></output>
+    </nav>
+    <iframe id="panel" title="Hotspot panel"></iframe
+    ><iframe id="modal" title="Hotspot modal" hidden></iframe>
+    <script type="module" src="./harness.ts"></script>
+  </body>
+</html>
