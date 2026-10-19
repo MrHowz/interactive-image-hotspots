@@ -1,5 +1,13 @@
 import { useEffect, useRef, useState } from "react";
-import { NS, data, imageUrl, validateFile, type Draft } from "./model";
+import {
+  NS,
+  data,
+  imageUrl,
+  validateFile,
+  selectionParam,
+  type Draft,
+} from "./model";
+import { CellPicker } from "./CellPicker";
 import { OBR, save } from "./sdk";
 import { chooseAsset, loadImage, upload } from "./images";
 import { useScene } from "./useScene";
@@ -7,6 +15,7 @@ export function Editor({ params }: { params: URLSearchParams }) {
   const state = useScene();
   const scene = params.get("scene") || "";
   const id = params.get("id") || undefined;
+  const selection = selectionParam(params.get("selection"));
   const [draft, setDraft] = useState<Draft>({
     name: "",
     url: "",
@@ -16,6 +25,13 @@ export function Editor({ params }: { params: URLSearchParams }) {
     enabled: true,
     visible: true,
     players: true,
+    marks: selection?.marks !== false,
+    region: !id
+      ? {
+          cellSize: selection?.cellSize ?? 100,
+          cells: selection?.cells ?? [[0, 0]],
+        }
+      : undefined,
   });
   const [loaded, setLoaded] = useState(!id);
   const [busy, setBusy] = useState(false);
@@ -53,12 +69,21 @@ export function Editor({ params }: { params: URLSearchParams }) {
       setDraft({
         name: item.name,
         url: d.url,
-        x: item.position.x,
-        y: item.position.y,
-        radius: (item.width * Math.abs(item.scale.x)) / 2,
+        x: selection?.x ?? item.position.x,
+        y: selection?.y ?? item.position.y,
+        radius:
+          item.type === "SHAPE"
+            ? (item.width * Math.abs(item.scale.x)) / 2
+            : 40,
         visible: item.visible,
         enabled: d.enabled,
         players: d.players,
+        marks: d.marks !== false,
+        region: selection
+          ? { cellSize: selection.cellSize, cells: selection.cells }
+          : d.version === 2
+            ? { cellSize: d.cellSize, cells: d.cells }
+            : undefined,
       });
       setPreview(d.url);
       setLoaded(true);
@@ -250,6 +275,12 @@ export function Editor({ params }: { params: URLSearchParams }) {
               </span>
             </div>
           )}
+          {draft.region && (
+            <CellPicker
+              region={draft.region}
+              onChange={(region) => change("region", region)}
+            />
+          )}
           <div className="coordinates">
             <label>
               X
@@ -269,21 +300,40 @@ export function Editor({ params }: { params: URLSearchParams }) {
                 onChange={(e) => change("y", e.target.valueAsNumber)}
               />
             </label>
-            <label>
-              Radius (px)
-              <input
-                type="number"
-                required
-                min={12}
-                max={1000}
-                value={draft.radius}
-                onChange={(e) => change("radius", e.target.valueAsNumber)}
-              />
-            </label>
+            {!draft.region && (
+              <label>
+                Radius (px)
+                <input
+                  type="number"
+                  required
+                  min={12}
+                  max={1000}
+                  value={draft.radius}
+                  onChange={(e) => change("radius", e.target.valueAsNumber)}
+                />
+              </label>
+            )}
+            {draft.region && (
+              <label>
+                Cell size (px)
+                <input type="number" readOnly value={draft.region.cellSize} />
+              </label>
+            )}
           </div>
           <small>
             Scene coordinates stay aligned when the map pans or zooms.
           </small>
+          <label className="check">
+            <input
+              type="checkbox"
+              checked={draft.marks !== false}
+              onChange={(e) => change("marks", e.target.checked)}
+            />
+            Show cell markings
+            <small>
+              Hide the fill and border; the selected cells stay clickable.
+            </small>
+          </label>
           <label className="check">
             <input
               type="checkbox"
@@ -292,14 +342,20 @@ export function Editor({ params }: { params: URLSearchParams }) {
             />
             Enabled
           </label>
-          <label className="check">
-            <input
-              type="checkbox"
-              checked={draft.visible}
-              onChange={(e) => change("visible", e.target.checked)}
-            />
-            Visible on map <small>Hidden points cannot be clicked.</small>
-          </label>
+          {!draft.region && (
+            <label className="check">
+              <input
+                type="checkbox"
+                checked={draft.visible}
+                onChange={(e) => change("visible", e.target.checked)}
+              />
+              Legacy visibility{" "}
+              <small>
+                For old circles only. Use Show cell markings to hide without
+                disabling clicks.
+              </small>
+            </label>
+          )}
           <label className="check">
             <input
               type="checkbox"

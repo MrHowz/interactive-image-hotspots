@@ -1,46 +1,42 @@
-# Validation record
+# Validation record — 1.1.0
 
-Executed on 20 October 2026 with Node.js 24.18.0, pinned Owlbear SDK 3.1.0, React 19.2.8, TypeScript 6.0.2 and Vite 8.2.0.
+Executed 20 October 2026 using Node.js 24.18.0, Owlbear SDK 3.1.0 and the local Vite server. This record distinguishes automated checks, browser checks against a simulated SDK host, and checks still needed in a real Owlbear room.
 
-## Automated checks
+## Automated
 
-- `npm test`: 9 tests pass (URL/file/draft validation, versioned metadata, circle/ellipse coordinates, scale and rotation, visibility, role restrictions, overlap and serialization).
-- `npm run lint`: passes (Oxlint).
-- `npm run build`: passes, including strict TypeScript checks and production assets.
-- Production `dist/` includes manifest, icon, background, action/editor/viewer entry page and bundled assets. The test harness is excluded.
+- `npm test`: 19 tests pass.
+- `npm run lint`: Oxlint passes.
+- `npm run build`: strict TypeScript and Vite production build pass.
+- Tests cover adjacent cell clicks; three cells opening the same image; hidden markings retaining player clicks; Disabled/Players gates; L-shape gaps; negative cell coordinates; rotated/scaled geometry; connectedness; duplicate/empty/oversized regions; persisted version-2 metadata; selection parsing; URL/file validation; old circle geometry/visibility; and manifest slash boundaries.
+- Production entries include the action/editor/viewer page and background page. The simulated host and tests are not included in dist.
 
-## Browser checks actually performed
+## Browser checks actually executed for 1.1.0
 
-Used the in-app Chromium browser with `tests/harness.html`. This is a **simulated SDK parent**, not an Owlbear server. It uses the actual installed SDK and production React components. Its disposable fixture storage is separate from production data.
+Used the real installed SDK client and React components with `tests/harness.html`, an explicitly labeled simulated Owlbear parent. The harness also loads the actual background entry point, dispatches the SDK's custom-tool events, emulates square-grid snapping and displays local-preview/shared-write counts.
 
-- Panel fits a 420 px iframe; list and empty states render.
-- Existing hotspot editor loads its name, URL, scene coordinates and radius.
-- Editing and saving changes the list using SDK updateItems messages.
-- Creating a new hotspot in a second simulated scene adds an item using the SDK builder and addItems messages.
-- Delete first displays confirmation; confirming removes the item and its metadata.
-- Switching simulated scenes shows the correct separate list and restores the original scene's hotspot on return.
-- Changing simulated role to PLAYER removes edit/delete/place controls while retaining allowed image access.
-- Switching simulated scenes while an editor is open disables the form and displays the stale-scene message.
-- Reload retains harness fixture edits. This confirms serialization and UI reconnection, not Owlbear server persistence.
-- Viewer opens, loads a real HTTPS image, zooms from 100% to 125%, resets and closes.
-- Cached-image loading race was reproduced (image complete but hidden), corrected and rechecked: the cached image now renders.
-- Dark and light theme switching inspected.
-- One browser run returned no warning/error entries. A later browser capture reported a `MutationObserver.observe` TypeError without a source URL. Neither application source nor the installed SDK contains a MutationObserver call; attribution is unresolved. Zero-console-error status in a live Owlbear room is not claimed.
+1. Select cells in the panel, then click three adjacent simulated map cells. Count reached 3 selected, one local preview and **zero shared writes**.
+2. Invoke Done through the registered SDK tool action. Editor received the same 3-cell selection and scene origin; local preview was removed.
+3. Set a real HTTPS image URL, turn **Show cell markings off**, then Save. The list contained one 3-cell image region and the host recorded one shared item write.
+4. Switch simulated role to PLAYER and click an **unmarked cell** on the simulated map. The background hit callback opened the correct image viewer. The image loaded and GM controls were absent.
+5. Switch to GM, edit the existing region, remove a cell and add a neighboring cell. Save an L-shaped region with markings on. The item remained one region with 3 cells.
+6. Reselect existing cells on the map and Cancel. The saved list stayed intact; no extra shared item write occurred and no local preview remained.
+7. Reload the harness. The stored version-2 region and old circle both appeared, including the marking state. This verifies the harness fixture serialization, not Owlbear server persistence.
 
-## Live-room checks still required
+A test-only harness stacking problem initially caused map controls to cover editor clicks. Adding a z-index to the harness modal corrected it; deselection was then rechecked and changed 3 cells to 2 before adding the L-shaped cell. This CSS is not part of production.
 
-These cannot be claimed as passed without an authenticated Owlbear room and a second client:
+## Previously checked in the browser
 
-1. Install the deployed HTTPS manifest, open a scene as GM and verify the background tool appears while the panel is closed.
-2. Place a hotspot through the custom tool. Check the marker center and hit boundary after pan/zoom, on overlapping map items and with multiple hotspots.
-3. Upload each supported file type, select its durable Owlbear asset and save. Cancel the upload destination and asset picker separately. Verify platform quota/size errors are understandable.
-4. Use URL sources that succeed, return 404, time out or deny embedding. Check preview, error and Retry behavior.
-5. Open the same room as PLAYER. Verify local-only viewer behavior, no GM controls and rejection of direct editor attempts.
-6. With player MAP create/update/delete disabled, verify server-side item edits/deletes are denied. A frontend role check alone is not proof of server authorization.
-7. Hide/disable a hotspot and mark one GM-only; verify none opens for players, including from an already-open viewer.
-8. Refresh both clients, close/reopen the extension and revisit a saved scene. Confirm server persistence and asset URL durability.
-9. Change scenes while editing, viewing and choosing an asset; stale editor saves should be rejected. Avoid switching precisely during the final SDK write, which has no atomic scene target.
-10. Test touch pinch/pan, portrait and high-resolution images, keyboard focus/Escape, narrow mobile layout and both Owlbear themes.
-11. Test actual GitHub Pages installation with a repository subpath and multiple clients. The workflow has been prepared, not run on GitHub.
+The earlier release's harness checks exercised create/edit/delete confirmation, personal viewer zoom/reset/close, theme changes, role changes, scene isolation and stale-editor disabling. A cached-image loading race was reproduced and fixed. A browser capture once reported a MutationObserver error without a source URL; application and installed SDK source contain no MutationObserver call, so attribution remains unresolved. Zero-console-error status in a live room is not claimed.
 
-No production API is mocked. The development harness does not validate Owlbear's asset storage, real tool dispatch, fog rendering or network synchronization.
+## Live Owlbear checks still required
+
+- Deploy this update, install/reload its manifest and verify real custom-tool registration and Done/Cancel action placement.
+- Verify center-only grid snapping and all cell boundaries against the actual map at different pan/zoom values. Test cells in a line, L shapes, holes, overlap, negatives and a larger region.
+- Verify markings on/off for both GM and PLAYER while clicks remain active. Verify Enabled off and Players off prevent player access, including an already-open viewer.
+- Test upload, asset-picker cancellation, image quotas and durable uploaded URLs; test remote image failure and retry.
+- Verify real MAP permissions, shared item synchronization and persistence after refresh/revisiting scenes with two clients.
+- Test scene/grid changes while selecting, editing or uploading, plus legacy circle conversion. Conversion is add-before-delete, not an atomic type replacement.
+- Test keyboard and mobile touch gestures, both themes, and very large image layouts.
+- Observe real Realtime traffic/console behavior with the other room extensions. The earlier reported 4003 rate limit has not been reproduced here and its cause is not established. This update retains the fix that removes recursive scene snapshot re-fetching.
+
+No production SDK API is mocked. The host simulator is only test tooling. No live-room deployment or multiplayer validation was performed by the agent for this release.

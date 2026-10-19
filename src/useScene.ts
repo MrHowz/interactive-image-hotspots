@@ -51,7 +51,7 @@ export function useScene() {
           scene: scene || "",
           // Item subscriptions already contain a full snapshot. Reuse it
           // instead of recursively fetching during continuous scene updates.
-          items: ready ? (r !== revision ? latestItems ?? items : items) : [],
+          items: ready ? (r !== revision ? (latestItems ?? items) : items) : [],
           error: "",
         });
       }
@@ -68,8 +68,7 @@ export function useScene() {
         OBR.scene.items.onChange((items: Item[]) => {
           revision++;
           latestItems = hotspots(items);
-          if (live)
-            set((s) => (s.ready ? { ...s, items: latestItems! } : s));
+          if (live) set((s) => (s.ready ? { ...s, items: latestItems! } : s));
         }),
         OBR.scene.onMetadataChange((m) => {
           if (live)

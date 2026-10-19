@@ -1,6 +1,13 @@
 import { useState } from "react";
-import { TOOL, VIEW, PLACE, allowed, data } from "./model";
-import { OBR, openEditor, openViewer, remove } from "./sdk";
+import { TOOL, VIEW, allowed, data, marksShown } from "./model";
+import {
+  OBR,
+  beginSelection,
+  setMarks,
+  openEditor,
+  openViewer,
+  remove,
+} from "./sdk";
 import { useScene } from "./useScene";
 export function App() {
   const state = useScene();
@@ -52,11 +59,13 @@ export function App() {
               disabled={busy || !state.scene}
               onClick={() =>
                 void run(() =>
-                  OBR.tool.activateMode(TOOL, state.gm ? PLACE : VIEW),
+                  state.gm
+                    ? beginSelection(state.scene)
+                    : OBR.tool.activateMode(TOOL, VIEW),
                 )
               }
             >
-              {state.gm ? "+ Place hotspot" : "◎ Explore hotspots"}
+              {state.gm ? "+ Select cells" : "◎ Explore hotspots"}
             </button>
             {state.gm && (
               <button
@@ -71,9 +80,32 @@ export function App() {
           </div>
           <p className="hint">
             {state.gm
-              ? "Place hotspot → click a point on the map → choose an image."
-              : "Select Explore, then click a visible circle on the map."}
+              ? "Select cells → click connected grid squares → ✓ Done in the map toolbar → choose an image."
+              : "Select Explore, then click a linked cell. Cells still work when their markings are hidden."}
           </p>
+          {state.gm && state.items.length > 0 && (
+            <button
+              className="full"
+              disabled={busy}
+              aria-pressed={state.items.some(marksShown)}
+              onClick={() =>
+                void run(() =>
+                  setMarks(
+                    state.scene,
+                    state.items.map((i) => i.id),
+                    !state.items.some(marksShown),
+                  ),
+                )
+              }
+            >
+              {state.items.some(marksShown)
+                ? "Hide all markings"
+                : "Show all markings"}
+              <small>
+                Only changes the fill and border. Cells stay clickable.
+              </small>
+            </button>
+          )}
           <div className="list-heading">
             <h2>{state.gm ? "In this scene" : "Available images"}</h2>
             <span>{items.length}</span>
@@ -128,14 +160,17 @@ export function App() {
                       <small>
                         {!d.enabled
                           ? "Disabled"
-                          : !item.visible
+                          : d.version === 1 && !item.visible
                             ? "Hidden"
                             : !d.players
                               ? "GM only"
-                              : "Ready to explore"}{" "}
+                              : d.marks === false
+                                ? "Clickable · markings hidden"
+                                : "Ready to explore"}{" "}
                         ·{" "}
-                        {Math.round((item.width * Math.abs(item.scale.x)) / 2)}{" "}
-                        px
+                        {d.version === 2
+                          ? `${d.cells.length} cells`
+                          : "Legacy circle"}
                       </small>
                       {state.gm && (
                         <div className="item-actions">
@@ -146,6 +181,31 @@ export function App() {
                             }
                           >
                             Edit
+                          </button>
+                          <button
+                            disabled={busy}
+                            onClick={() =>
+                              void run(() =>
+                                beginSelection(state.scene, item.id),
+                              )
+                            }
+                          >
+                            Reselect cells
+                          </button>
+                          <button
+                            disabled={busy}
+                            aria-label={`${marksShown(item) ? "Hide" : "Show"} markings for ${item.name}`}
+                            onClick={() =>
+                              void run(() =>
+                                setMarks(
+                                  state.scene,
+                                  [item.id],
+                                  !marksShown(item),
+                                ),
+                              )
+                            }
+                          >
+                            {marksShown(item) ? "Hide marks" : "Show marks"}
                           </button>
                           <button
                             className="danger"
@@ -186,12 +246,12 @@ export function App() {
               <p>
                 Disable player MAP create, update and delete permissions in room
                 settings. Hotspots use locked MAP items. Shared URLs are not
-                secret; hiding a point prevents interaction, not access to its
-                metadata.
+                secret. Hiding markings keeps cells clickable. Turn Enabled off
+                to disable interaction, or turn Players off for GM-only access.
               </p>
               <p>
-                Hotspots are independent of fog. Hide or disable points that
-                should not be revealed.
+                Hotspots are independent of fog. Disable regions that should not
+                be revealed.
               </p>
             </details>
           )}
