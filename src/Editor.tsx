@@ -1,3 +1,4 @@
+import { parseArea } from "./areas";
 import { useEffect, useRef, useState } from "react";
 import {
   NS,
@@ -14,13 +15,28 @@ export function Editor({ params }: { params: URLSearchParams }) {
   const state = useScene();
   const scene = params.get("scene") || "";
   const id = params.get("id") || "";
+  const pendingArea = parseArea(params.get("area"));
+  const [transform, setTransform] = useState({
+    x: pendingArea?.position.x ?? 0,
+    y: pendingArea?.position.y ?? 0,
+    scaleX: 1,
+    scaleY: 1,
+  });
+  const isArea =
+    !!pendingArea ||
+    data(
+      state.items.find((i) => i.id === id) ??
+        ({ metadata: {} } as import("@owlbear-rodeo/sdk").Item),
+    )?.version === 4;
   const [draft, setDraft] = useState<LinkDraft>({
     name: "",
     url: "",
     enabled: true,
     players: true,
+    gmMarks: true,
+    playerMarks: false,
   });
-  const [loaded, setLoaded] = useState(false);
+  const [loaded, setLoaded] = useState(!!pendingArea);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [preview, setPreview] = useState("");
@@ -58,6 +74,14 @@ export function Editor({ params }: { params: URLSearchParams }) {
         url: d?.url ?? "",
         enabled: d?.enabled ?? true,
         players: d?.players ?? true,
+        gmMarks: d?.version === 4 ? d.gmMarks : true,
+        playerMarks: d?.version === 4 ? d.playerMarks : false,
+      });
+      setTransform({
+        x: item.position.x,
+        y: item.position.y,
+        scaleX: item.scale.x,
+        scaleY: item.scale.y,
       });
       setPreview(d?.url ?? "");
       setLoaded(true);
@@ -96,8 +120,8 @@ export function Editor({ params }: { params: URLSearchParams }) {
     <main className="editor">
       <header>
         <div className="eyebrow">SCENE HANDOUT</div>
-        <h1>Link image to object</h1>
-        <p>Choose an image for this token, drawing or map object.</p>
+        <h1>{isArea ? "Image area" : "Link image to object"}</h1>
+        <p>Choose an image to open with one click using Explore.</p>
         {state.items.find((item) => item.id === id) && (
           <p className="attachment-name">
             Attached to:{" "}
@@ -134,7 +158,13 @@ export function Editor({ params }: { params: URLSearchParams }) {
           void run(async () => {
             await verify(draft.url);
             if (!mounted.current) return;
-            await save(scene, draft, id);
+            await save(
+              scene,
+              draft,
+              id,
+              pendingArea,
+              isArea ? transform : undefined,
+            );
             await OBR.modal.close(`${NS}/editor`);
           });
         }}
@@ -144,7 +174,7 @@ export function Editor({ params }: { params: URLSearchParams }) {
             !valid ||
             busy ||
             !loaded ||
-            !state.items.some((item) => item.id === id)
+            (!pendingArea && !state.items.some((item) => item.id === id))
           }
         >
           <label>
@@ -215,7 +245,7 @@ export function Editor({ params }: { params: URLSearchParams }) {
             </div>
             {file && (
               <div className="upload">
-                <img src={filePreview} alt="Selected local file preview" />
+                <img src={filePreview || undefined} alt="Selected local file preview" />
                 <span>{file.name}</span>
                 <button
                   type="button"
@@ -262,6 +292,47 @@ export function Editor({ params }: { params: URLSearchParams }) {
                   : "Preview · verify before saving"}
               </span>
             </div>
+          )}
+          {isArea && (
+            <section className="area-settings">
+              <h2>Area appearance</h2>
+              <label className="check">
+                <input
+                  type="checkbox"
+                  checked={draft.gmMarks ?? true}
+                  onChange={(e) => change("gmMarks", e.target.checked)}
+                />
+                Show border to GM
+              </label>
+              <label className="check">
+                <input
+                  type="checkbox"
+                  checked={draft.playerMarks ?? false}
+                  onChange={(e) => change("playerMarks", e.target.checked)}
+                />
+                Show border to players
+              </label>
+              <small>Hiding the border keeps the entire area clickable.</small>
+              <div className="coordinates">
+                {(["x", "y", "scaleX", "scaleY"] as const).map((key) => (
+                  <label key={key}>
+                    {key}
+                    <input
+                      type="number"
+                      step="any"
+                      required
+                      value={transform[key]}
+                      onChange={(e) =>
+                        setTransform((t) => ({
+                          ...t,
+                          [key]: e.target.valueAsNumber,
+                        }))
+                      }
+                    />
+                  </label>
+                ))}
+              </div>
+            </section>
           )}
           <label className="check">
             <input

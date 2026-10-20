@@ -1,12 +1,19 @@
-# อัปเดตเป็น Image Links 2.0.0
+# อัปเดตเป็น 3.0.0 บน GitHub + Cloudflare
 
-1. แตก interactive-image-hotspots-github-update-2.0.0.zip
-2. เปิด repository MrHowz/interactive-image-hotspots → Add file → Upload files
-3. อัปโหลดไฟล์และโฟลเดอร์ภายใน ZIP ทับตำแหน่งเดิม ให้ package.json, src, public อยู่ root อย่าอัปโหลด ZIP ทั้งก้อน
-4. Commit main แล้วรอ Cloudflare Pages deploy สำเร็จ (npm run build / output dist)
-5. เปิด https://interactive-image-hotspots.pages.dev/manifest.json ตรวจ version 2.0.0
-6. ปิดแท็บห้อง Owlbear ซ้ำให้เหลือแท็บเดียวแล้ว Refresh หนึ่งครั้ง หากชื่อ Action ยังเก่าให้อัปเดต/ติดตั้ง Manifest เดิมในหน้าจัดการ Extensions และเปิดใช้ในห้อง
-7. แผงใหม่ชื่อ Image Links มีข้อความ v2.0.0 ด้านล่าง ใช้ Owlbear Select เลือก Token หรือ Drawing หนึ่งชิ้น → Link image → ใส่ภาพ → Save image link
-8. เปิดภาพด้วย Open image หรือ Open linked image ในเมนูของวัตถุ ไม่ใช้ Select cells / Explore เดิม
+1. แตกไฟล์ **interactive-image-hotspots-github-update-3.0.0.zip**
+2. เข้า repository `MrHowz/interactive-image-hotspots` → Add file → Upload files
+3. ลากไฟล์และโฟลเดอร์ทั้งหมดข้างใน ZIP ลง root เดิม โดยให้ `package.json`, `src/`, `public/` อยู่ระดับหลัก ไม่ซ้อนโฟลเดอร์ชื่อ ZIP
+4. Commit changes ลง main
+5. รอ Cloudflare Pages deployment ใหม่สำเร็จ (build `npm run build`, output `dist`, Node 24)
+6. เปิด https://interactive-image-hotspots.pages.dev/manifest.json ตรวจ version เป็น 3.0.0
+7. รีเฟรชห้อง Owlbear แล้วเปิด Image Links จะเห็น Point, Rectangle, Ellipse, Freehand, Grid cells และ Explore
 
-ลิงก์เดิมยังอยู่ในรายการ Unlink ไม่ลบวัตถุเดิม หากจะเอารูป Marker เก่าออกจากแผนที่ ให้ตรวจว่าเป็น Marker ที่ไม่ใช้แล้วแล้วลบเองด้วยเครื่องมือ Owlbear
+การสร้าง: เลือกเครื่องมือ → คลิก/ลากพื้นที่ → เลือกภาพ → Save → Explore → คลิกพื้นที่ครั้งเดียว
+Grid cells เลือกหลายช่องแล้วกด Done · choose image
+ซ่อนกรอบ: Edit → ปิด Show border to GM / Show border to players ตามต้องการ พื้นที่ยังกดได้
+Token เดิม: Select Token → Link an existing token or object → Link image → Save → Explore แล้วคลิก Token
+
+อย่าลบ Scene item เดิมเพื่ออัปเดต Extension ลิงก์เก่ายังคงอยู่ใน metadata ของ Scene
+ไฟล์ CellPicker/control เก่าใน ZIP เป็น migration stub เพื่อแทนที่เวอร์ชันเก่าเมื่ออัปโหลดผ่านเว็บ ไม่ใช่ฟังก์ชัน production ที่รอ implementation
+
+ไฟล์ที่ส่งเป็นแพ็กเกจในเครื่อง ยังไม่ได้อัปโหลด GitHub หรือ deploy ให้เอง

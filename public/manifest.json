@@ -1,8 +1,8 @@
 {
   "name": "Interactive Image Hotspots",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "manifest_version": 1,
-  "description": "Link images to existing tokens, drawings and map objects. Open personal image viewers from the object selection menu.",
+  "description": "Draw image areas, select grid cells or link tokens. Click once with Explore to open a personal image viewer.",
   "icon": "/icon.svg",
   "background_url": "/background.html",
   "action": {

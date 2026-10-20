@@ -1,39 +1,67 @@
-# Validation — Image Links 2.0.0
+# Validation · 3.0.0 · 2026-10-20
 
-## Executed
+## Commands actually run
 
-- npm run lint — passed (oxlint).
-- npm run build — passed (TypeScript strict checking and Vite production build).
-- npm test — 28 tests passed: 8 metadata link tests, schema rejection, URL/file validation, manifest path regression and legacy data/geometry compatibility. Legacy geometry tests verify data compatibility, not a retained Select cells UI.
-- Playwright through persistent Node REPL: Chromium headless, real React and installed Owlbear SDK client inside the development host emulator.
-- Selected token → editor → public HTTPS image preview → save → personal viewer. Public placehold.co image loaded successfully. Reload restored item metadata; moving the token retained the link.
-- Drawing → Link / edit image selection-menu callback → save. Open linked image callback opened its personal viewer.
-- Edit title, Enabled off/on, Players on/off, GM/Player transition, hidden object visibility off/on, multiple selection disabled, scene A/B/A, unlink cancellation and confirmation all exercised through UI.
-- Unlink left the original object present (2 objects before and after); deleting the drawing while its editor was open displayed the missing-object message. Unit tests independently compare every original object field after attach/edit/unlink.
-- Unsafe HTTP URL and unsupported local-file type rejected. Local PNG preview and cancellation exercised. Browse Assets cancellation used a simulated empty SDK picker response; this is not a native upload/picker integration test.
-- Viewer: open/close/Escape, zoom +/−, reset, mouse drag pan. Observed 125% zoom and translate(40px,20px), reset to 100%. Failure/retry exercised with a controlled HTTPS response fixture.
-- Fixed a discovered bug: canvas pointer capture swallowed Retry clicks. Pointer capture now ignores button targets; actual Retry click recovered a visible image.
-- Exploratory checks covered multi-selection, deleted objects, long title editing, URL failure, local file rejection/cancel, keyboard focus and role/scene transitions.
-- Separate visual pass: initial and populated panel, dark/light themes, editor top/bottom and personal viewer. Panel widths 420 and 320 px; editor/viewer 360 px. Numeric document widths matched viewport widths (420/420, 320/320, 360/360); primary controls fit. Forms intentionally scroll vertically. No unintended horizontal overflow, overlapping controls, distorted image ratio or clipped primary panel action found in reviewed screenshots.
-- Clean-session final pageerror collection was empty. The initial harness had an SDK builder-before-ready error; fixtures were corrected and the final session reloaded before checking console errors.
+- `npm test`: **36 passed, 0 failed** (geometry, schema/permissions, URLs/files, token attach/edit/detach, legacy shapes/cells, manifest paths).
+- `npm run lint`: passed without diagnostics.
+- `npm run build`: passed TypeScript and Vite production compilation. A missing-field error in the new test fixture was corrected before the final successful build.
+- SDK API methods checked against installed 3.1.0 declarations and implementation; custom-tool pointer usage compared with official tutorial.
 
-Screenshots are delivered outside the source tree in ../qa-object-links-2.0.0/.
+## Playwright browser validation actually performed
 
-## Still requires a real Owlbear room
+Used persistent Playwright Chromium headless and the real React UI/SDK client inside `tests/harness.html`. The parent host, Scene, roles and SDK transport responses are **simulated**, not an authenticated Owlbear room. Image URL was a deterministic HTTPS SVG response fulfilled by Playwright; file preview used an in-memory PNG. Only test harness uses localStorage. Browser actions used normal buttons, clicks, drag gestures, fields and keyboard.
 
-The emulator cannot prove native context-menu placement/selection behavior across layers, server permissions, Assets upload/picker persistence, multiplayer on another device, touch pinch or fog behavior. No real-room pass is claimed. Headed downloaded Chromium failed to launch on this host (spawn UNKNOWN); UI QA used headless Chromium with explicit viewport screenshots.
+Passed observations:
 
-Smoke test after deployment:
+- Rectangle and ellipse dragged on test map; point clicked; concave freehand drawn and saved. Each opened the real editor.
+- Three grid cells selected; middle cell removed/re-added; count changed 3→2→3; Done opened editor and saved one area.
+- Single map click opened rectangle, freehand, cells and linked Token viewers; freehand concave cutout did not open.
+- Player saw no borders with default settings but opened the hidden freehand area/cells. GM-only mutation controls absent.
+- Changed one area's GM border off / player border on. Local outline counts changed from 4 for GM to 1 for Player (five saved areas).
+- Token linked using panel; moved with simulated host control; click at new location opened original linked image. Confirm unlink preserved Token.
+- Area x/y and scaleX/scaleY edited; click at transformed location opened it.
+- Scene B empty; returning to Scene A restored links; browser reload restored six saved links from the simulated persistent Scene.
+- Cancel drawing / Escape cleared draft without creating shared items; scene switch cleared selected cells; canceled image editor created no orphan.
+- Switching Scene while editor was open displayed an access/scene error and disabled Save.
+- Disabled area did not open from map and disappeared from Player's list.
+- Failed image URL displayed useful error; local PNG preview rendered; file cancel and canceled native picker response returned safely.
+- Delete area required confirmation; Keep link canceled; Confirm delete removed area. Token remained.
+- Viewer Zoom in reached 125%, Reset returned to 100%, Close and Escape worked.
+- Simulated map zoom 2x + pan still opened the correct cells.
+- File selection initially emitted a React empty-src warning; changed the pending preview src to undefined, reran the file-preview browser flow, and confirmed preview rendered with no empty-src warning.
+- No uncaught JavaScript errors recorded in tested flows. Intentionally aborted bad-image network request is expected.
 
-1. Confirm manifest version 2.0.0 and refresh the room once.
-2. As GM select a token, then a Draw shape. Link a URL to each through the panel and selection menu.
-3. Upload PNG/JPEG/WebP/GIF to Owlbear Assets, select the saved result, save and refresh both GM/player sessions. Confirm the saved HTTPS URL remains usable.
-4. Move/rotate/scale original items; verify links open with original object appearance unchanged.
-5. As Player check allowed, GM-only, disabled and hidden objects; no edit/unlink UI should appear.
-6. Delete an object; its link disappears. Unlink another; the original object stays.
-7. Switch scenes while editor/viewer is open; old-scene editing/opening must be unavailable.
-8. Verify locked/transparent drawings using Owlbear selection behavior; use panel list if the item cannot be hit normally.
+## Visual review
 
-## Dependencies
+Inspected screenshots separately from interaction tests:
+- Dark panel at 420×620 and image editor at 480×760: readable controls, vertical scrolling for long content.
+- Light panel at 320px: body scrollWidth equals clientWidth (320), no horizontal overflow.
+- Large viewer in light mode: image retained ratio, close/zoom/reset controls visible.
+- Screenshots are saved beside the project in `qa-image-areas-3.0.0/`.
 
-npm audit fix updated source-map-js. The installed Owlbear SDK still brings an upstream uuid moderate advisory; npm reports 2 moderate entries including the SDK parent, with no compatible fix offered. No unverified major dependency override was applied.
+## Still requires real Owlbear testing
+
+These are not claimed passed by the simulated host:
+
+1. Install production manifest in a real room with separate GM and Player sessions.
+2. Native tool activation and pointer delivery for all five modes; real grid alignment/offset and browser zoom. Non-square grid rejection is implemented but not exercised in this browser session.
+3. Native Explore dragging/panning and distinction between drag and click. No global Move interception exists.
+4. Independent local overlays on the real renderer, Fog interactions, actual Token target hit testing and permission enforcement by Owlbear.
+5. Actual file upload into durable Owlbear Assets, picker selection, storage quota/cancel, then reload and another Player loading that URL.
+6. Touch pinch/pan, mobile Owlbear layout, high-resolution/portrait/GIF images, real server hotlink/CORS policy, viewer retry recovery.
+7. Real simultaneous edits, disconnect/reconnect, and server rate-limit behavior. Tests do not prove a fix for the previously reported Realtime 4003.
+8. Draw cancellation during a slow SDK response and deletion of a target while saving. Local generation checks and fresh guards are implemented; real transport concurrency remains a manual gate.
+
+No GitHub push or Cloudflare deployment was performed in this change. The ZIP artifacts are ready to upload.
+
+## Reproduce locally
+
+```sh
+npm ci
+npm test
+npm run lint
+npm run build
+npm run dev
+```
+
+Open `http://127.0.0.1:5173/tests/harness.html`. Use extension buttons and the grid test map. Host controls switch roles/scenes/theme, select/move/delete objects, and change map pan/zoom. Do not install the harness into Owlbear or publish it as the extension entry point; Vite's production inputs are only index.html and background.html.

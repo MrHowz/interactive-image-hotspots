@@ -1,7 +1,7 @@
-import { OBR, icon, openEditor, openViewer, sceneId } from "./sdk";
+import { installTools } from "./scene-tools";
+import { OBR, icon, openEditor, sceneId } from "./sdk";
 import { NS, SCENE_KEY } from "./model";
-const edit = `${NS}/link-object`,
-  view = `${NS}/open-object`;
+const edit = `${NS}/link-object`;
 let epoch = 0;
 let lastRole: string | undefined;
 async function identity() {
@@ -26,7 +26,10 @@ async function run(action: () => Promise<void>) {
 }
 const stops: (() => void)[] = [];
 OBR.onReady(() => {
-  void run(identity);
+  void run(async () => {
+    await identity();
+    stops.push(installTools());
+  });
   stops.push(
     OBR.scene.onReadyChange(() => void run(identity)),
     OBR.player.onChange((p) => {
@@ -53,31 +56,9 @@ OBR.onReady(() => {
         });
     },
   });
-  void OBR.contextMenu.create({
-    id: view,
-    icons: [
-      {
-        icon,
-        label: "Open linked image",
-        filter: {
-          min: 1,
-          max: 1,
-          every: [{ key: ["metadata", NS], value: undefined, operator: "!=" }],
-        },
-      },
-    ],
-    onClick: (context) => {
-      if (context.items.length === 1)
-        void run(async () => {
-          const scene = await sceneId();
-          if (scene) await openViewer(context.items[0].id, scene);
-        });
-    },
-  });
 });
 if (import.meta.hot)
   import.meta.hot.dispose(() => {
     stops.forEach((stop) => stop());
     void OBR.contextMenu.remove(edit);
-    void OBR.contextMenu.remove(view);
   });

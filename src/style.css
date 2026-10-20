@@ -540,3 +540,51 @@ input[type="checkbox"] {
   overflow-wrap: anywhere;
   font-size: 12px;
 }
+
+.drawing-tools {
+  margin: 18px 0;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+.mode-buttons {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+  margin-top: 12px;
+}
+.mode-buttons button {
+  font-size: 11px;
+  padding: 10px 4px;
+}
+button[aria-pressed="true"] {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+.drawing-help {
+  margin-top: 12px;
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+}
+.drawing-help .row {
+  flex-wrap: wrap;
+}
+.token-link {
+  margin: 18px 0;
+  font-size: 12px;
+}
+.token-link summary {
+  cursor: pointer;
+  padding: 9px 0;
+  color: var(--muted);
+}
+.area-settings {
+  margin: 18px 0;
+  border-top: 1px solid var(--line);
+  padding-top: 18px;
+}
+.area-settings .coordinates {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}

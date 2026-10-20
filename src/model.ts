@@ -1,3 +1,4 @@
+import { validArea, areaContains, type Area } from "./areas.ts";
 import type { Item, Shape, Vector2, PathCommand } from "@owlbear-rodeo/sdk";
 
 export const NS = "io.github.interactive-image-hotspots/v1";
@@ -31,7 +32,18 @@ type CommonData = {
 };
 
 export type HotspotData = CommonData &
-  ({ version: 1 } | ({ version: 2 } & Region) | { version: 3; title: string });
+  (
+    | { version: 1 }
+    | ({ version: 2 } & Region)
+    | { version: 3; title: string }
+    | {
+        version: 4;
+        title: string;
+        area: Area;
+        gmMarks: boolean;
+        playerMarks: boolean;
+      }
+  );
 
 export type Hotspot = Item & Partial<Pick<Shape, "width" | "height">>;
 
@@ -198,7 +210,10 @@ export function data(item: Item): HotspotData | undefined {
 
   if (
     !d ||
-    (d.version !== 1 && d.version !== 2 && d.version !== 3) ||
+    (d.version !== 1 &&
+      d.version !== 2 &&
+      d.version !== 3 &&
+      d.version !== 4) ||
     typeof d.enabled !== "boolean" ||
     typeof d.players !== "boolean" ||
     typeof d.url !== "string"
@@ -213,11 +228,19 @@ export function data(item: Item): HotspotData | undefined {
     return;
 
   if (
-    d.version === 3 &&
+    (d.version === 3 || d.version === 4) &&
     (typeof d.title !== "string" || !d.title.trim() || d.title.length > 100)
   )
     return;
 
+  if (
+    d.version === 4 &&
+    (item.type !== "PATH" ||
+      !validArea(d.area as Area) ||
+      typeof d.gmMarks !== "boolean" ||
+      typeof d.playerMarks !== "boolean")
+  )
+    return;
   try {
     imageUrl(d.url);
 
@@ -254,6 +277,7 @@ export function hit(
       if ((d.version === 1 && !i.visible) || !d.enabled || !allowed(i, gm))
         return false;
 
+      if (d.version === 4) return areaContains(i, d.area, p);
       const angle = (-i.rotation * Math.PI) / 180,
         dx = p.x - i.position.x,
         dy = p.y - i.position.y;
@@ -320,12 +344,16 @@ export type LinkDraft = {
   url: string;
   enabled: boolean;
   players: boolean;
+  gmMarks?: boolean;
+  playerMarks?: boolean;
 };
 
 export function linkTitle(item: Item): string {
   const d = data(item);
 
-  return d?.version === 3 ? d.title : item.name || "Untitled object";
+  return d?.version === 3 || d?.version === 4
+    ? d.title
+    : item.name || "Untitled object";
 }
 
 export function attach(item: Item, draft: LinkDraft) {
@@ -337,12 +365,21 @@ export function attach(item: Item, draft: LinkDraft) {
   if (typeof draft.enabled !== "boolean" || typeof draft.players !== "boolean")
     throw new Error("Invalid access settings.");
 
+  const previous = data(item);
   item.metadata[NS] = {
     version: 3,
     title,
     url: imageUrl(draft.url),
     enabled: draft.enabled,
     players: draft.players,
+    ...(previous?.version === 4
+      ? {
+          version: 4,
+          area: previous.area,
+          gmMarks: draft.gmMarks ?? previous.gmMarks,
+          playerMarks: draft.playerMarks ?? previous.playerMarks,
+        }
+      : {}),
   };
 }
 

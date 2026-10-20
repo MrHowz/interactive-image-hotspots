@@ -1,18 +1,16 @@
-# QA inventory — object links 2.0.0
+# QA inventory 3.0.0
 
-Use tests/harness.html only as a simulated SDK host; production excludes the harness.
+Claims: click once in Explore opens a personal image from points, rectangle/ellipse/freehand interiors, grid unions and linked tokens. GM and player borders are independent and hiding borders preserves hit detection. Drawing is local until saving; cancel never creates an orphan. Areas persist, move/scale and remain scene-scoped. Token links remain editable without changing token geometry.
 
-| Claim / controls | Functional check | Visual state / evidence |
-| --- | --- | --- |
-| Select token or drawing, Link image / Edit | select exactly one; save URL; reopen and edit title | selected card, editor, linked list |
-| Native selection menu Link / Open | emit installed SDK context-menu callbacks from host menu buttons | editor and personal viewer |
-| URL Preview, file selection, cancel, Browse Assets, Upload | URL preview and error; local file preview/cancel; asset upload/picker requires real room | editor preview/error/file preview |
-| Enabled / Players | change, save, switch GM/Player, restore | player empty vs allowed list |
-| Open, zoom +/−, Reset, drag, Escape/Close, Retry | open saved image, zoom cycle, pan, close; failed source retry | fullscreen image and error |
-| Unlink confirmation / Keep | cancel then confirm; original object survives | confirmation then empty list |
-| Persistent item metadata, movement | reload; move original item; link remains | link list after reload/move |
-| Scene / role / theme changes | scene A→B→A; GM→Player→GM; dark→light→dark | empty state, GM/player, light panel |
-| Off-happy-path | multiple selection disables linking; delete target while editor open; unsafe/failed URL | disabled CTA, deletion error |
-| Layout / accessibility | keyboard focus, 420px and 320px panel, editor and viewer; numeric bounds plus screenshot inspection | initial + populated + editor + viewer |
+Controls and checks:
+- Explore active/idle → click area/token viewer; blank map no modal; drag does not open.
+- Point click; rectangle/ellipse drag; freehand enclosed drag → editor; save/cancel.
+- Grid add/remove cells → count/local preview; Done/Enter → editor; Escape/Cancel clears.
+- Editor URL/file preview, save, close; GM/player border off/on; Enabled/Players; x/y/scale.
+- Token select/link/edit/unlink; area edit/delete confirmation/keep.
+- Viewer zoom +/- reset/pan/close/retry, mouse and narrow screen layout.
+- Role, scene and theme switching; reload persists.
+- Off-path: cancel/scene change during draw; multiple rapid clicks; disabled area; freehand concave gap; grid empty and non-square; deleted target while editing.
+- Visual evidence: populated/empty panel at 420 and 320 px, local draft outlines, hidden player outlines, editor top/bottom, viewer. Inspect screenshots and numeric bounds separately from functional checks.
 
-Manual real-room gate: native Owlbear selection menu placement, permissions on different layers, native asset upload/picker persistence, player session on another device, fog behavior, touch pinch. Do not report these as passed from the host emulator.
+Real Owlbear gate: native pointer dispatch, Move-like dragging, token hit testing, local overlay appearance on actual map, Assets native upload/picker, multiplayer/touch. Simulated host tests cannot certify these.
