@@ -2,38 +2,25 @@ import { useEffect, useRef, useState } from "react";
 import {
   NS,
   data,
+  linkTitle,
   imageUrl,
   validateFile,
-  selectionParam,
-  type Draft,
+  type LinkDraft,
 } from "./model";
-import { CellPicker } from "./CellPicker";
 import { OBR, save } from "./sdk";
 import { chooseAsset, loadImage, upload } from "./images";
 import { useScene } from "./useScene";
 export function Editor({ params }: { params: URLSearchParams }) {
   const state = useScene();
   const scene = params.get("scene") || "";
-  const id = params.get("id") || undefined;
-  const selection = selectionParam(params.get("selection"));
-  const [draft, setDraft] = useState<Draft>({
+  const id = params.get("id") || "";
+  const [draft, setDraft] = useState<LinkDraft>({
     name: "",
     url: "",
-    x: Number(params.get("x") || 0),
-    y: Number(params.get("y") || 0),
-    radius: 40,
     enabled: true,
-    visible: true,
     players: true,
-    marks: selection?.marks !== false,
-    region: !id
-      ? {
-          cellSize: selection?.cellSize ?? 100,
-          cells: selection?.cells ?? [[0, 0]],
-        }
-      : undefined,
   });
-  const [loaded, setLoaded] = useState(!id);
+  const [loaded, setLoaded] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [preview, setPreview] = useState("");
@@ -65,32 +52,19 @@ export function Editor({ params }: { params: URLSearchParams }) {
     if (loaded || !state.ready || state.scene !== scene) return;
     const item = state.items.find((i) => i.id === id);
     if (item) {
-      const d = data(item)!;
+      const d = data(item);
       setDraft({
-        name: item.name,
-        url: d.url,
-        x: selection?.x ?? item.position.x,
-        y: selection?.y ?? item.position.y,
-        radius:
-          item.type === "SHAPE"
-            ? (item.width * Math.abs(item.scale.x)) / 2
-            : 40,
-        visible: item.visible,
-        enabled: d.enabled,
-        players: d.players,
-        marks: d.marks !== false,
-        region: selection
-          ? { cellSize: selection.cellSize, cells: selection.cells }
-          : d.version === 2
-            ? { cellSize: d.cellSize, cells: d.cells }
-            : undefined,
+        name: linkTitle(item),
+        url: d?.url ?? "",
+        enabled: d?.enabled ?? true,
+        players: d?.players ?? true,
       });
-      setPreview(d.url);
+      setPreview(d?.url ?? "");
       setLoaded(true);
     }
   }, [state, loaded, id, scene]);
   const valid = state.ready && state.gm && state.scene === scene && !!scene;
-  const change = <K extends keyof Draft>(key: K, value: Draft[K]) =>
+  const change = <K extends keyof LinkDraft>(key: K, value: LinkDraft[K]) =>
     setDraft((d) => ({ ...d, [key]: value }));
   const run = async (action: () => Promise<void>) => {
     if (lock.current) return;
@@ -122,8 +96,15 @@ export function Editor({ params }: { params: URLSearchParams }) {
     <main className="editor">
       <header>
         <div className="eyebrow">SCENE HANDOUT</div>
-        <h1>{id ? "Edit hotspot" : "Create hotspot"}</h1>
-        <p>A small point. A bigger story.</p>
+        <h1>Link image to object</h1>
+        <p>Choose an image for this token, drawing or map object.</p>
+        {state.items.find((item) => item.id === id) && (
+          <p className="attachment-name">
+            Attached to:{" "}
+            {state.items.find((item) => item.id === id)!.name ||
+              "Untitled object"}
+          </p>
+        )}
       </header>
       {error && (
         <p role="alert" className="error">
@@ -143,8 +124,8 @@ export function Editor({ params }: { params: URLSearchParams }) {
       )}
       {valid && id && !state.items.some((item) => item.id === id) && (
         <p className="error" role="alert">
-          This hotspot no longer exists. Close the editor and choose another
-          hotspot.
+          This object no longer exists. Close the editor and select another
+          object.
         </p>
       )}
       <form
@@ -158,7 +139,14 @@ export function Editor({ params }: { params: URLSearchParams }) {
           });
         }}
       >
-        <fieldset disabled={!valid || busy || !loaded}>
+        <fieldset
+          disabled={
+            !valid ||
+            busy ||
+            !loaded ||
+            !state.items.some((item) => item.id === id)
+          }
+        >
           <label>
             Name
             <input
@@ -275,65 +263,6 @@ export function Editor({ params }: { params: URLSearchParams }) {
               </span>
             </div>
           )}
-          {draft.region && (
-            <CellPicker
-              region={draft.region}
-              onChange={(region) => change("region", region)}
-            />
-          )}
-          <div className="coordinates">
-            <label>
-              X
-              <input
-                type="number"
-                required
-                value={draft.x}
-                onChange={(e) => change("x", e.target.valueAsNumber)}
-              />
-            </label>
-            <label>
-              Y
-              <input
-                type="number"
-                required
-                value={draft.y}
-                onChange={(e) => change("y", e.target.valueAsNumber)}
-              />
-            </label>
-            {!draft.region && (
-              <label>
-                Radius (px)
-                <input
-                  type="number"
-                  required
-                  min={12}
-                  max={1000}
-                  value={draft.radius}
-                  onChange={(e) => change("radius", e.target.valueAsNumber)}
-                />
-              </label>
-            )}
-            {draft.region && (
-              <label>
-                Cell size (px)
-                <input type="number" readOnly value={draft.region.cellSize} />
-              </label>
-            )}
-          </div>
-          <small>
-            Scene coordinates stay aligned when the map pans or zooms.
-          </small>
-          <label className="check">
-            <input
-              type="checkbox"
-              checked={draft.marks !== false}
-              onChange={(e) => change("marks", e.target.checked)}
-            />
-            Show cell markings
-            <small>
-              Hide the fill and border; the selected cells stay clickable.
-            </small>
-          </label>
           <label className="check">
             <input
               type="checkbox"
@@ -342,20 +271,6 @@ export function Editor({ params }: { params: URLSearchParams }) {
             />
             Enabled
           </label>
-          {!draft.region && (
-            <label className="check">
-              <input
-                type="checkbox"
-                checked={draft.visible}
-                onChange={(e) => change("visible", e.target.checked)}
-              />
-              Legacy visibility{" "}
-              <small>
-                For old circles only. Use Show cell markings to hide without
-                disabling clicks.
-              </small>
-            </label>
-          )}
           <label className="check">
             <input
               type="checkbox"
@@ -365,7 +280,7 @@ export function Editor({ params }: { params: URLSearchParams }) {
             Players may open this image
           </label>
           <button className="primary full" type="submit">
-            {busy ? "Working…" : "Save hotspot"}
+            {busy ? "Working…" : "Save image link"}
           </button>
         </fieldset>
       </form>

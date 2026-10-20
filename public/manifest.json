@@ -1,12 +1,12 @@
 {
   "name": "Interactive Image Hotspots",
-  "version": "1.1.1",
+  "version": "2.0.0",
   "manifest_version": 1,
-  "description": "Link images to connected grid cells. Show or hide cell markings while keeping regions clickable.",
+  "description": "Link images to existing tokens, drawings and map objects. Open personal image viewers from the object selection menu.",
   "icon": "/icon.svg",
   "background_url": "/background.html",
   "action": {
-    "title": "Image Hotspots",
+    "title": "Image Links",
     "icon": "/icon.svg",
     "popover": "/index.html",
     "width": 420,

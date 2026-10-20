@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { NS, allowed, data } from "./model";
+import { NS, allowed, data, linkTitle } from "./model";
 import { OBR } from "./sdk";
 import { useScene } from "./useScene";
 export function Viewer({ params }: { params: URLSearchParams }) {
@@ -47,7 +47,7 @@ export function Viewer({ params }: { params: URLSearchParams }) {
       <header className="viewer-bar">
         <div>
           <div className="eyebrow">IMAGE HOTSPOTS</div>
-          <h1>{available ? item.name : "Image unavailable"}</h1>
+          <h1>{available ? linkTitle(item) : "Image unavailable"}</h1>
         </div>
         <button
           autoFocus
@@ -71,6 +71,7 @@ export function Viewer({ params }: { params: URLSearchParams }) {
               scale(zoom * Math.exp(-e.deltaY * 0.002));
             }}
             onPointerDown={(e) => {
+              if ((e.target as Element).closest("button")) return;
               e.currentTarget.setPointerCapture(e.pointerId);
               pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
               if (pointers.current.size === 2) {
@@ -134,7 +135,7 @@ export function Viewer({ params }: { params: URLSearchParams }) {
               key={`${url}/${retry}`}
               className="full-image"
               src={url}
-              alt={item.name}
+              alt={linkTitle(item)}
               draggable={false}
               referrerPolicy="no-referrer"
               onLoad={() => setImageState({ url: url || "", status: "ready" })}

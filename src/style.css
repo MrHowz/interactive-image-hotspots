@@ -509,44 +509,6 @@ input[type="checkbox"] {
     transition: none !important;
   }
 }
-.cell-picker {
-  margin: 18px 0;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 12px;
-  background: var(--surface);
-}
-.cell-picker .list-heading {
-  padding: 0;
-  margin: 0 0 8px;
-  border: 0;
-}
-.cell-picker p {
-  font-size: 11px;
-}
-.cell-scroll {
-  max-height: 250px;
-  max-width: 100%;
-  overflow: auto;
-  padding: 8px;
-  background: var(--bg);
-  border-radius: 8px;
-}
-.cell-board {
-  display: grid;
-  gap: 3px;
-  width: max-content;
-}
-.cell-board button {
-  padding: 0;
-  border-radius: 4px;
-  font-size: 13px;
-}
-.cell-board button.selected {
-  background: var(--accent);
-  color: var(--ink);
-  border-color: var(--accent);
-}
 .item-actions {
   flex-wrap: wrap;
   row-gap: 8px;
@@ -569,4 +531,12 @@ input[type="checkbox"] {
 .selection-status p {
   font-size: 11px;
   margin: 5px 0 10px;
+}
+
+.selection-status h2 {
+  overflow-wrap: anywhere;
+}
+.attachment-name {
+  overflow-wrap: anywhere;
+  font-size: 12px;
 }

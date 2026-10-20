@@ -1,19 +1,12 @@
-# แก้ปัญหาเลือกช่องไม่ได้ — เวอร์ชัน 1.1.1
+# อัปเดตเป็น Image Links 2.0.0
 
-ชุดนี้เปลี่ยนการส่งคำสั่งระหว่างแผงกับ background ให้มีการตอบรับ ไม่ต้องอ่านชุดช่องจาก Tool Metadata และเพิ่มจำนวนช่องพร้อมปุ่ม Done/Cancel ในแผง
+1. แตก interactive-image-hotspots-github-update-2.0.0.zip
+2. เปิด repository MrHowz/interactive-image-hotspots → Add file → Upload files
+3. อัปโหลดไฟล์และโฟลเดอร์ภายใน ZIP ทับตำแหน่งเดิม ให้ package.json, src, public อยู่ root อย่าอัปโหลด ZIP ทั้งก้อน
+4. Commit main แล้วรอ Cloudflare Pages deploy สำเร็จ (npm run build / output dist)
+5. เปิด https://interactive-image-hotspots.pages.dev/manifest.json ตรวจ version 2.0.0
+6. ปิดแท็บห้อง Owlbear ซ้ำให้เหลือแท็บเดียวแล้ว Refresh หนึ่งครั้ง หากชื่อ Action ยังเก่าให้อัปเดต/ติดตั้ง Manifest เดิมในหน้าจัดการ Extensions และเปิดใช้ในห้อง
+7. แผงใหม่ชื่อ Image Links มีข้อความ v2.0.0 ด้านล่าง ใช้ Owlbear Select เลือก Token หรือ Drawing หนึ่งชิ้น → Link image → ใส่ภาพ → Save image link
+8. เปิดภาพด้วย Open image หรือ Open linked image ในเมนูของวัตถุ ไม่ใช้ Select cells / Explore เดิม
 
-1. แตก ZIP interactive-image-hotspots-github-update-1.1.1.zip
-2. เปิดหน้าแรก Repository MrHowz/interactive-image-hotspots → Add file → Upload files
-3. ลากไฟล์และโฟลเดอร์ภายใน ZIP ทับตำแหน่งเดิม โดยให้ src, public และ package.json อยู่ที่ระดับหลัก อย่าอัปโหลด ZIP หรือโฟลเดอร์ครอบทั้งก้อน
-4. Commit ลง main แล้วรอ Cloudflare Pages Deploy สำเร็จ
-5. เปิด https://interactive-image-hotspots.pages.dev/manifest.json ตรวจ version 1.1.1
-6. ปิดแท็บห้องซ้ำให้เหลือแท็บเดียว แล้วรีเฟรชห้องหนึ่งครั้ง แผงรุ่นใหม่จะมีข้อความ v1.1.1 ด้านล่าง
-
-ต้องอัปเดตโค้ดทั้งชุด โดยเฉพาะ src/background.ts, src/sdk.ts, src/App.tsx และไฟล์ใหม่ src/control.ts, src/controlProtocol.ts, src/useSelection.ts ไม่ใช่แก้เฉพาะ Manifest
-
-วิธีใช้:
-Select cells → เห็น 0 cells selected → คลิกช่องบนแผนที่ → จำนวนเพิ่มขึ้น → กด Done · choose image ในแผง → ตั้งชื่อ/เลือกภาพ → Save
-ถ้าแผงปิดเมื่อคลิกแผนที่ ให้เปิด Image Hotspots อีกครั้ง จำนวนช่องจะกลับมาแสดง
-Hide marks ซ่อนกรอบแต่ยังกดได้ ส่วน Enabled ใช้หยุดการคลิกจริง ๆ
-
-ชุดนี้ผ่าน automated tests และการทดสอบ SDK host จำลอง ยังไม่ได้อัปโหลดเข้า GitHub หรือยืนยันผลบนห้อง Owlbear จริงโดยอัตโนมัติ
+ลิงก์เดิมยังอยู่ในรายการ Unlink ไม่ลบวัตถุเดิม หากจะเอารูป Marker เก่าออกจากแผนที่ ให้ตรวจว่าเป็น Marker ที่ไม่ใช้แล้วแล้วลบเองด้วยเครื่องมือ Owlbear

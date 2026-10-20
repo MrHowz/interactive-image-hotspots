@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import type { Item } from "@owlbear-rodeo/sdk";
 import { OBR, sceneId } from "./sdk";
-import { hotspots, SCENE_KEY, type Hotspot } from "./model";
+import { SCENE_KEY, type Hotspot } from "./model";
 export function useScene() {
   const [state, set] = useState<{
     connected: boolean;
@@ -9,6 +9,7 @@ export function useScene() {
     gm: boolean;
     scene: string;
     items: Hotspot[];
+    selected: string[];
     error: string;
   }>({
     connected: false,
@@ -16,6 +17,7 @@ export function useScene() {
     gm: false,
     scene: "",
     items: [],
+    selected: [],
     error: "",
   });
   useEffect(() => {
@@ -42,7 +44,8 @@ export function useScene() {
       lastRole = gm ? "GM" : "PLAYER";
       const scene = ready ? await sceneId() : "";
       if (!live || g !== generation) return;
-      const items = ready ? hotspots(await OBR.scene.items.getItems()) : [];
+      const items = ready ? await OBR.scene.items.getItems() : [];
+      const selected = ready ? ((await OBR.player.getSelection()) ?? []) : [];
       if (live && g === generation) {
         set({
           connected: true,
@@ -52,6 +55,7 @@ export function useScene() {
           // Item subscriptions already contain a full snapshot. Reuse it
           // instead of recursively fetching during continuous scene updates.
           items: ready ? (r !== revision ? (latestItems ?? items) : items) : [],
+          selected,
           error: "",
         });
       }
@@ -62,12 +66,18 @@ export function useScene() {
         OBR.scene.onReadyChange(() => {
           revision++;
           latestItems = undefined;
-          set((s) => ({ ...s, ready: false, scene: "", items: [] }));
+          set((s) => ({
+            ...s,
+            ready: false,
+            scene: "",
+            items: [],
+            selected: [],
+          }));
           void read().catch(fail);
         }),
         OBR.scene.items.onChange((items: Item[]) => {
           revision++;
-          latestItems = hotspots(items);
+          latestItems = items;
           if (live) set((s) => (s.ready ? { ...s, items: latestItems! } : s));
         }),
         OBR.scene.onMetadataChange((m) => {
@@ -81,6 +91,7 @@ export function useScene() {
             }));
         }),
         OBR.player.onChange((player) => {
+          if (live) set((s) => ({ ...s, selected: player.selection ?? [] }));
           if (player.role !== lastRole) {
             lastRole = player.role;
             void read().catch(fail);
